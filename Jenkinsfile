@@ -2,19 +2,27 @@ pipeline {
     agent any
 
     tools {
-        jdk 'JDK 17'       // Doit correspondre au nom que tu as mis dans "Global Tool Configuration"
-        maven 'Maven 3.8.6' // Idem
+        maven 'Maven 3.9.6'   // Assure-toi que ce nom correspond à ta configuration Jenkins
+        jdk 'JDK 17'          // Idem ici pour le nom JDK
     }
 
-   stage('Checkout') {
-    steps {
-        git branch: 'main', url: 'https://github.com/zayeneus23/springboot-ci-cd-pipeline.git'
+    environment {
+        MAVEN_HOME = tool 'Maven 3.9.6'
+        JAVA_HOME = tool 'JDK 17'
+        PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${env.PATH}"
     }
-}
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/zayeneus23/springboot-ci-cd-pipeline.git'
+            }
+        }
 
         stage('Build') {
             steps {
-                sh 'mvn clean install'
+                sh 'mvn clean compile'
             }
         }
 
@@ -22,6 +30,21 @@ pipeline {
             steps {
                 sh 'mvn test'
             }
+        }
+
+        stage('Package') {
+            steps {
+                sh 'mvn package'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo '✅ Build réussi !'
+        }
+        failure {
+            echo '❌ Le build a échoué.'
         }
     }
 }
