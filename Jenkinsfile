@@ -6,12 +6,11 @@ pipeline {
         maven 'Maven 3.8.6' // Idem
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/zayeneus23/springboot-ci-cd-pipeline.git'
-            }
-        }
+   stage('Checkout') {
+    steps {
+        git branch: 'main', url: 'https://github.com/zayeneus23/springboot-ci-cd-pipeline.git'
+    }
+}
 
         stage('Build') {
             steps {
