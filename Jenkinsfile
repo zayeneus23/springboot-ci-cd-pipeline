@@ -2,14 +2,16 @@ pipeline {
     agent any
 
     tools {
-        maven 'Maven 3.8.6'   // Corrigé ici
-        jdk 'JDK 17'          // Assure-toi que ce nom existe aussi dans Jenkins
+        maven 'Maven 3.8.6'   // Nom défini dans Manage Jenkins > Global Tool Configuration
+        jdk 'JDK 17'          // Idem
     }
 
     environment {
+        // Récupération du token stocké dans Jenkins Credentials (type Secret text, ID = sonar-token)
+        SONAR_TOKEN = credentials('sonar-token')
         MAVEN_HOME = tool 'Maven 3.8.6'
-        JAVA_HOME = tool 'JDK 17'
-        PATH = "${JAVA_HOME}/bin:${MAVEN_HOME}/bin:${env.PATH}"
+        JAVA_HOME  = tool 'JDK 17'
+        PATH       = "${JAVA_HOME}\\bin;${MAVEN_HOME}\\bin;${env.PATH}"
     }
 
     stages {
@@ -20,31 +22,36 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Build Maven') {
             steps {
-                bat 'mvn clean compile'
+                bat 'mvn clean install'
             }
         }
 
-        stage('Test') {
+        stage('SonarQube Analysis') {
             steps {
-                bat 'mvn test'
+                withSonarQubeEnv('sonar') {
+                    bat "mvn sonar:sonar -Dsonar.login=${SONAR_TOKEN}"
+                }
             }
         }
 
-        stage('Package') {
+        stage('Docker Build') {
             steps {
-                bat 'mvn package'
+                // Vérifie que Docker est installé et accessible sur l'agent
+                bat 'docker --version'
+                // Construit l'image Docker
+                bat 'docker build -t springboot-app .'
             }
         }
     }
 
     post {
         success {
-            echo '✅ Build réussi !'
+            echo '✅ Pipeline CI/CD exécuté avec succès !'
         }
         failure {
-            echo '❌ Le build a échoué.'
+            echo '❌ Une erreur est survenue dans le pipeline.'
         }
     }
 }
